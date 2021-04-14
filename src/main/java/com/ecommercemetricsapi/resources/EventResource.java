@@ -39,7 +39,7 @@ public class EventResource {
 	
 	@PostMapping("/event")
 	@ResponseStatus(HttpStatus.CREATED)
-	@ApiOperation(value="Records a new event")
+	@ApiOperation(value="Add a new event")
 	public Event createEvent(@RequestBody Event event) {
 		return eventRepository.save(event);
 	}

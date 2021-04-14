@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ecommercemetricsapi.models.Company;
 import com.ecommercemetricsapi.models.Event;
 import com.ecommercemetricsapi.models.Metric;
+import com.ecommercemetricsapi.repository.CompanyRepository;
 import com.ecommercemetricsapi.repository.EventRepository;
 
 import io.swagger.annotations.ApiOperation;
@@ -25,19 +26,26 @@ import io.swagger.annotations.ApiOperation;
 public class MetricsResource {
 
 	@Autowired
+	CompanyRepository companyRepository;
+	
+	@Autowired
 	EventRepository eventRepository;
 	
-	@GetMapping(value="/metric")
+	@GetMapping(value="/company/{id}/metric")
 	@ApiOperation(value="Returns all metrics of a given company")
-	public List<Metric> getmetrics(@RequestBody Company company){
-		
-		return null;
+	public List<Metric> getmetrics(@PathVariable(value="id") long id){
+		List<Metric> metrics = new ArrayList<>();
+		metrics.add(getConversionRate(id));
+		metrics.add(getCartAbandonmentRate(id));
+		metrics.add(getApprovedOrderRate(id));
+		return metrics;
 	}
 	
-	@GetMapping(value="/metric/conversion-rate")
+	@GetMapping(value="/company/{id}/metric/conversion-rate")
 	@ApiOperation(value="Returns the conversion rate of a given company")
-	public Metric getConversionRate(@RequestBody Company company){
+	public Metric getConversionRate(@PathVariable(value="id") long id){
 		// (sales number ÷ visit number) x 100
+		Company company = companyRepository.findById(id);
 		List<Event> sales = new ArrayList<>();
 		for (Event e : eventRepository.findAll()) {
 			System.out.println(e);
@@ -55,10 +63,11 @@ public class MetricsResource {
 		return new Metric("conversion-rate", company, conversionRate);
 	}
 	
-	@GetMapping(value="/metric/cart-abandonment-rate")
+	@GetMapping(value="/company/{id}/metric/cart-abandonment-rate")
 	@ApiOperation(value="Returns the cart abandonment rate of a given company")
-	public Metric getCartAbandonmentRate(@RequestBody Company company){
+	public Metric getCartAbandonmentRate(@PathVariable(value="id") long id){
 		// (number of carts with added products ÷ sales number ) x 100
+		Company company = companyRepository.findById(id);
 		List<Event> carts = new ArrayList<>();
 		for (Event e : eventRepository.findAll()) {
 			if(e.getCompany().equals(company) && "cart".equals(e.getType())) {
@@ -71,17 +80,19 @@ public class MetricsResource {
 				sales.add(e);
 			}
 		}
-		float cartAbandonmentRate = (sales.size() / carts.size()) * 100;
+		float cartAbandonmentRate = ((float)sales.size() / (float)carts.size()) * 100;
 		return new Metric("cart-abandonment-rate", company, cartAbandonmentRate);
 	}
 	
-	@GetMapping(value="/metric/approved-order-rate")
+	@GetMapping(value="/company/{id}/metric/approved-order-rate")
 	@ApiOperation(value="Returns the approved order rate of a given company")
-	public Metric getApprovedOrderRate(@RequestBody Company company){
+	public Metric getApprovedOrderRate(@PathVariable(value="id") long id){
 		// (number of paid orders ÷ number of orders) x 100
+		// sale == paid-order
+		Company company = companyRepository.findById(id);
 		List<Event> paidOrders = new ArrayList<>();
 		for (Event e : eventRepository.findAll()) {
-			if(e.getCompany().equals(company) && "paid-order".equals(e.getType())) {
+			if(e.getCompany().equals(company) && "sale".equals(e.getType())) {
 				paidOrders.add(e);
 			}
 		}
@@ -91,14 +102,7 @@ public class MetricsResource {
 				orders.add(e);
 			}
 		}
-		float approvedOrderRate = (paidOrders.size() / orders.size()) * 100;
+		float approvedOrderRate = ((float)paidOrders.size() / (float)orders.size()) * 100;
 		return new Metric("approved-order-rate", company, approvedOrderRate);
-	}
-	
-	@DeleteMapping("/metric/{id}")
-	@ApiOperation(value="Delete given metric")
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void deleteEvent(@PathVariable(value="id") long id) {
-		eventRepository.findById(id);
 	}
 }

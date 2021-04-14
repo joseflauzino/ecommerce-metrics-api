@@ -21,7 +21,7 @@ public class Event implements Serializable{
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private long id;
 	
-	// valid values: sale, visit, cart
+	// valid values: visit, cart, order, sale
 	@NotNull
 	private String type;
 	
